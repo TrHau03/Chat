@@ -1,15 +1,18 @@
-import { FlatList, ListRenderItemInfo, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { Button, FlatList, ListRenderItemInfo, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import io from 'socket.io-client';
 import { UseConText } from '../provider/Context';
 import { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { SceneMap, TabView } from 'react-native-tab-view';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import auth from '@react-native-firebase/auth';
 
 
-
-
+GoogleSignin.configure({
+    webClientId: '668454287895-ha3ftquv5crq2b5n0g0gls40b9f7ik8f.apps.googleusercontent.com',
+});
 
 
 const Room = (prop: any) => {
@@ -20,43 +23,37 @@ const Room = (prop: any) => {
         { key: 'first', title: 'ListRoom' },
         { key: 'second', title: 'ListChat' },
     ]);
-
+    let listTemp: any;
     const { socket }: any = useContext(UseConText);
-    const [listRoom, setListRoom] = useState<any>([]);
-    const [listUser, setListUser] = useState<any>([]);
-    const [nameRoom, setNameRoom] = useState<string>('');
     const [keyClient, setKeyClient] = useState<string>();
-    useEffect(() => {
-        socket.emit('findAllRoom', (e: any) => {
-            setListRoom(e);
-        })
-        socket.emit('findAllUser', (e: any) => {
-            setListUser(Object.values(e));
-        })
-        socket.on('room', (e: any) => {
-            setListRoom((prevRoom: any) => [...prevRoom, e])
-        })
-        return () => { }
-    }, [])
 
-
-    const handleCreateRoom = () => {
-        socket.emit('createRoom', { roomID: listRoom?.length + 1, nameRoom: nameRoom });
-        setNameRoom('');
-    }
     const handleJoinChat = () => {
-        socket.emit('join', { name: userName }, (e: any) => {
-            setKeyClient(e);
-        });
+
     };
     const [modalVisible, setModalVisible] = useState<boolean>(true);
-    const [userName, setUserName] = useState<string>('');
-
-
+    const [userName, setUserName] = useState<string | null>('');
     const ListRoom = () => {
+        const isFocus = useIsFocused();
+
+        const [listRoom, setListRoom] = useState<any>([]);
+        const [nameRoom, setNameRoom] = useState<string>('');
+        useEffect(() => {
+            if (isFocus) {
+                socket.emit('findAllRoom', (e: any) => {
+                    setListRoom(e);
+                })
+                socket.on('room', (e: any) => {
+                    setListRoom((prevRoom: any) => [...prevRoom, e])
+                })
+            }
+            return () => { }
+        }, [isFocus])
+        const handleCreateRoom = () => {
+            nameRoom != '' && socket.emit('createRoom', { roomID: listRoom?.length + 1, nameRoom: nameRoom });
+            setNameRoom('');
+        }
         return (
             <View>
-
                 <View style={{ flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', height: 'auto', rowGap: 10 }}>
                     <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Create room</Text>
                     <TextInput style={{ borderWidth: 0.5, borderRadius: 5, width: '80%', paddingVertical: 5 }} placeholder='NameRoom' value={nameRoom} onChangeText={setNameRoom} />
@@ -75,7 +72,7 @@ const Room = (prop: any) => {
                             nameRoom: string;
                         }>) => {
                             return (
-                                <Pressable onPress={() => navigation.navigate('Chat', { keyClient, roomID: item.roomID, userName })} style={{ width: '100%', borderWidth: 0.5, paddingVertical: 5, justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}>
+                                <Pressable onPress={() => navigation.navigate('Chat', { keyClient, roomID: item.roomID, userName, title: item.nameRoom })} style={{ width: '100%', borderWidth: 0.5, paddingVertical: 5, justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}>
                                     <Text>{item?.nameRoom}</Text>
                                 </Pressable>
                             )
@@ -85,6 +82,16 @@ const Room = (prop: any) => {
         )
     }
     const ListChat = () => {
+        const [listUser, setListUser] = useState<any>([]);
+        const isFocus = useIsFocused();
+        useEffect(() => {
+            if (isFocus) {
+                socket.emit('findAllUser', (e: any) => {
+                    listTemp = e;
+                    setListUser(Object.values(e));
+                })
+            }
+        }, [isFocus])
         return (
             <View>
                 <View style={{ justifyContent: 'center', alignItems: 'center', width: '100%' }}>
@@ -92,10 +99,11 @@ const Room = (prop: any) => {
                     <FlatList
                         style={{ width: '80%' }}
                         contentContainerStyle={{ justifyContent: 'center' }}
-                        data={listUser}
+                        data={listUser.filter((user: any) => user != userName)}
                         renderItem={({ item }: any) => {
+                            const key = Object.keys(listTemp).find((user: any) => listTemp[user] == item)
                             return (
-                                <Pressable onPress={() => navigation.navigate('Chat', { keyClient, roomID: item.roomID, userName })} style={{ width: '100%', borderWidth: 0.5, paddingVertical: 5, justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}>
+                                <Pressable onPress={() => navigation.navigate('Chat11', { keyClient, user: key, userName, title: item })} style={{ width: '100%', borderWidth: 0.5, paddingVertical: 5, justifyContent: 'center', alignItems: 'center', borderRadius: 5 }}>
                                     <Text>{item}</Text>
                                 </Pressable>
                             )
@@ -108,6 +116,21 @@ const Room = (prop: any) => {
         first: ListRoom,
         second: ListChat,
     });
+    async function onGoogleButtonPress() {
+        // Check if your device supports Google Play
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        // Get the users ID token
+        const userGoogle = await GoogleSignin.signIn();
+
+        // Create a Google credential with the token
+        const googleCredential = auth.GoogleAuthProvider.credential(userGoogle.idToken);
+        userGoogle && setUserName(userGoogle.user.name);
+        socket.emit('join', { name: userGoogle.user.name }, (e: any) => {
+            setKeyClient(e);
+        });
+        // Sign-in the user with the credential
+        return auth().signInWithCredential(googleCredential);
+    }
     return (
         (modalVisible) ?
             <SafeAreaView>
@@ -127,28 +150,11 @@ const Room = (prop: any) => {
                             gap: 10
                         }}
                     >
-                        <TextInput
-                            value={userName}
-                            onChangeText={setUserName}
-                            style={{ width: '80%', borderRadius: 10, borderWidth: 1, alignSelf: 'center' }}
-                            placeholder='Enter your name '
+
+                        <Button
+                            title="Google Sign-In"
+                            onPress={() => onGoogleButtonPress().then(() => { console.log('Signed in with Google!'); setModalVisible(false) })}
                         />
-                        <Pressable
-                            onPress={() => {
-                                userName !== '' && setModalVisible(false);
-                                handleJoinChat()
-                            }}
-                            style={{
-                                width: '80%',
-                                height: '5%',
-                                backgroundColor: '#dfdfdf',
-                                alignSelf: 'center',
-                                justifyContent: 'center',
-                                borderRadius: 5
-                            }}
-                        >
-                            <Text style={{ textAlign: 'center', fontSize: 20 }}>Join this app</Text>
-                        </Pressable>
                     </View>
                 </Modal>
             </SafeAreaView> :

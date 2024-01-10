@@ -35,6 +35,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import Chat from './src/screen/Chat';
 import { AppProvider } from './src/provider/Context';
+import Chat11 from './src/screen/Chat11';
 const Stack = createNativeStackNavigator();
 function App(): React.JSX.Element {
 
@@ -44,6 +45,7 @@ function App(): React.JSX.Element {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Room" component={Room} />
           <Stack.Screen name="Chat" component={Chat} />
+          <Stack.Screen name="Chat11" component={Chat11} />
         </Stack.Navigator>
       </NavigationContainer>
     </AppProvider>

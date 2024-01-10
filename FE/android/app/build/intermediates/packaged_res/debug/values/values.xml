@@ -3,6 +3,7 @@
     <integer name="react_native_dev_server_port">8081</integer>
     <integer name="react_native_inspector_proxy_port">8081</integer>
     <string name="app_name">chatReact</string>
+    <string name="default_web_client_id" translatable="false">668454287895-ha3ftquv5crq2b5n0g0gls40b9f7ik8f.apps.googleusercontent.com</string>
     <string name="gcm_defaultSenderId" translatable="false">668454287895</string>
     <string name="google_api_key" translatable="false">AIzaSyDB8YbI0anxNYk0voHZn5_0SCeM_F-7zA0</string>
     <string name="google_app_id" translatable="false">1:668454287895:android:d82997094b77356b04ba52</string>

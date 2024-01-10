@@ -6,15 +6,12 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import uuid from 'react-native-uuid';
 import storage from '@react-native-firebase/storage';
 const Chat = (prop: any) => {
-    const { keyClient, roomID, userName } = prop.route.params;
-    console.log(prop.route.params);
+    const { keyClient, roomID, userName, title } = prop.route.params;
 
     const { socket }: any = useContext(UseConText);
     const [messages, setMessages] = useState<any>();
     const [messageText, setMessageText] = useState<string>();
     const [typingDisplay, setTypingDisplay] = useState<string>();
-    const [imageURL, setImageURL] = useState<string>('');
-
     useEffect(() => {
         socket.emit('findAllMessages', { roomID }, (e: any) => {
             const newMess: any = []
@@ -95,6 +92,7 @@ const Chat = (prop: any) => {
     };
     return (
         <View style={{ height: '100%', paddingTop: 20 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>{title}</Text>
             {
                 messages?.map((item: any, index: number) => {
                     return (

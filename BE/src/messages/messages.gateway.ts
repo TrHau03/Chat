@@ -23,7 +23,7 @@ export class MessagesGateway {
   }
   @SubscribeMessage('findAllUser')
   async findAllUser() {
-    const user = this.messagesService.findAllUser();
+    const user = await this.messagesService.findAllUser();
     return user;
   }
   @SubscribeMessage('createRoom')
@@ -33,10 +33,9 @@ export class MessagesGateway {
     return;
   }
   @SubscribeMessage('createRoomByUser')
-  async createRoomByUser(@MessageBody() createRoomDto: { id: string, messages: Message }) {
+  async createRoomByUser(@MessageBody() createRoomDto: any) {
     const roomByUser = await this.messagesService.createRoomByUser(createRoomDto);
-    this.server.emit('roomByUser', roomByUser);
-    return;
+    return roomByUser;
   }
   @SubscribeMessage('createMessage')
   async create(@MessageBody() createMessageDto: CreateMessageDto) {
@@ -47,6 +46,7 @@ export class MessagesGateway {
   @SubscribeMessage('createMessageByUser')
   async createByUser(@MessageBody() createMessageDto: CreateMessageDto) {
     const messagesByUser = await this.messagesService.createMessagesByUser(createMessageDto);
+    console.log(messagesByUser);
     this.server.emit('messagesByUser', messagesByUser);
     return;
   }

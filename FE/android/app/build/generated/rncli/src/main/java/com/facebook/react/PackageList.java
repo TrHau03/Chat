@@ -13,8 +13,12 @@ import java.util.ArrayList;
 
 // @react-native-firebase/app
 import io.invertase.firebase.app.ReactNativeFirebaseAppPackage;
+// @react-native-firebase/auth
+import io.invertase.firebase.auth.ReactNativeFirebaseAuthPackage;
 // @react-native-firebase/storage
 import io.invertase.firebase.storage.ReactNativeFirebaseStoragePackage;
+// @react-native-google-signin/google-signin
+import com.reactnativegooglesignin.RNGoogleSigninPackage;
 // react-native-image-picker
 import com.imagepicker.ImagePickerPackage;
 // react-native-pager-view
@@ -69,7 +73,9 @@ public class PackageList {
     return new ArrayList<>(Arrays.<ReactPackage>asList(
       new MainReactPackage(mConfig),
       new ReactNativeFirebaseAppPackage(),
+      new ReactNativeFirebaseAuthPackage(),
       new ReactNativeFirebaseStoragePackage(),
+      new RNGoogleSigninPackage(),
       new ImagePickerPackage(),
       new PagerViewPackage(),
       new SafeAreaContextPackage(),

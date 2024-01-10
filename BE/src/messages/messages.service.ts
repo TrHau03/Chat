@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { UpdateMessageDto } from './dto/update-message.dto';
 import { Message } from './entities/message.entity';
 
 @Injectable()
@@ -26,13 +24,18 @@ export class MessagesService {
     return room;
   }
   createRoomByUser(createRoomDto: any) {
-    const room = {
-      roomID: createRoomDto.roomID,
-      userID: [createRoomDto.client1ID, createRoomDto.client2ID],
-      messages: []
-    };
-    this.roomByUser.push(room);
-    return room;
+    const findRoom = this.roomByUser.find((room: any) => room.userID.every((userID: any) => createRoomDto.userID.includes(userID)));
+    if (findRoom) {
+      return findRoom;
+    } else {
+      const room = {
+        roomID: createRoomDto.roomID,
+        userID: createRoomDto.userID,
+        messages: []
+      };
+      this.roomByUser.push(room);
+      return room;
+    }
   }
   create(createMessageDto: any) {
     const messages = {
@@ -45,6 +48,7 @@ export class MessagesService {
     return messages;
   }
   createMessagesByUser(createMessageDto: any) {
+    
     const messages = {
       name: this.clientToUser[createMessageDto.clientID],
       text: createMessageDto.text
@@ -77,9 +81,6 @@ export class MessagesService {
   }
   findAllRoom() {
     return this.room;
-  }
-  findRoomByIDUser(userID: string) {
-    return this.roomByUser.filter((room: any) => room.userID.includes(userID));
   }
   findAllUser() {
     return this.clientToUser;
