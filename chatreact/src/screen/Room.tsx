@@ -1,4 +1,4 @@
-import { Button, FlatList, ListRenderItemInfo, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { Button, FlatList, Image, ListRenderItemInfo, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import io from 'socket.io-client';
 import { UseConText } from '../provider/Context';
@@ -20,18 +20,16 @@ const Room = (prop: any) => {
     const layout = useWindowDimensions();
     const [index, setIndex] = useState<number>(0);
     const [routes] = useState([
-        { key: 'first', title: 'ListRoom' },
-        { key: 'second', title: 'ListChat' },
+        { key: '1', title: 'ListRoom' },
+        { key: '2', title: 'ListChat' },
+        { key: '3', title: 'Profile' },
     ]);
     let listTemp: any;
     const { socket }: any = useContext(UseConText);
     const [keyClient, setKeyClient] = useState<string>();
-
-    const handleJoinChat = () => {
-
-    };
     const [modalVisible, setModalVisible] = useState<boolean>(true);
     const [userName, setUserName] = useState<string | null>('');
+    const [userGoogle, setUserGoogle] = useState<{ email: string, name: string, photo: string } | any>();
     const ListRoom = () => {
         const isFocus = useIsFocused();
 
@@ -39,21 +37,25 @@ const Room = (prop: any) => {
         const [nameRoom, setNameRoom] = useState<string>('');
         useEffect(() => {
             if (isFocus) {
-                socket.emit('findAllRoom', (e: any) => {
+                socket.emit('findAllRoom', { clientID: keyClient }, (e: any) => {
                     setListRoom(e);
                 })
                 socket.on('room', (e: any) => {
-                    setListRoom((prevRoom: any) => [...prevRoom, e])
+                    e.userID.includes(keyClient) && setListRoom((prevRoom: any) => [...prevRoom, e])
+                })
+                socket.on('roomUpdate', (e: any) => {
+                    e.userID.includes(keyClient) && setListRoom((prevRoom: any) => [...prevRoom, e])
                 })
             }
             return () => { }
         }, [isFocus])
         const handleCreateRoom = () => {
-            nameRoom != '' && socket.emit('createRoom', { roomID: listRoom?.length + 1, nameRoom: nameRoom });
+            nameRoom != '' && socket.emit('createRoom', { roomID: listRoom?.length + 1, nameRoom: nameRoom, userID: [keyClient] });
             setNameRoom('');
         }
         return (
             <View>
+                
                 <View style={{ flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', height: 'auto', rowGap: 10 }}>
                     <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Create room</Text>
                     <TextInput style={{ borderWidth: 0.5, borderRadius: 5, width: '80%', paddingVertical: 5 }} placeholder='NameRoom' value={nameRoom} onChangeText={setNameRoom} />
@@ -112,19 +114,43 @@ const Room = (prop: any) => {
             </View>
         )
     }
+    const Profile = () => {
+        const Logout = async () => {
+            try {
+                await GoogleSignin.revokeAccess();
+                await GoogleSignin.signOut();
+                auth().signOut();
+                setModalVisible(true);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+        return (
+            <View style={{ alignItems: 'center', height: '100%', marginVertical: 20, rowGap: 10 }}>
+
+                <Image style={{ width: 100, height: 100, borderRadius: 200 }} source={{ uri: userGoogle.photo }} />
+                <Text style={{ fontSize: 20, color: 'black' }}>{userGoogle.email}</Text>
+                <Text>{userGoogle.name}</Text>
+                <Pressable onPress={() => Logout()} style={{ position: 'absolute', alignSelf: 'center', bottom: 40, width: '90%', height: 50, backgroundColor: '#7ac3ff', borderRadius: 10, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, color: 'white' }}>Logout</Text>
+                </Pressable>
+            </View>
+        )
+    }
     const renderScene = SceneMap({
-        first: ListRoom,
-        second: ListChat,
+        1: ListRoom,
+        2: ListChat,
+        3: Profile,
     });
     async function onGoogleButtonPress() {
         // Check if your device supports Google Play
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
         // Get the users ID token
         const userGoogle = await GoogleSignin.signIn();
-
         // Create a Google credential with the token
         const googleCredential = auth.GoogleAuthProvider.credential(userGoogle.idToken);
         userGoogle && setUserName(userGoogle.user.name);
+        userGoogle && setUserGoogle(userGoogle.user);
         socket.emit('join', { name: userGoogle.user.name }, (e: any) => {
             setKeyClient(e);
         });
